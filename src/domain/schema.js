@@ -5,6 +5,15 @@ export const users = pgTable('users', {
     id: serial('id').primaryKey(),
     email: text('email').notNull().unique(),
     name: text('name'),
+    passwordHash: text('password_hash').notNull(),
+    createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const sessions = pgTable('sessions', {
+    id: serial('id').primaryKey(),
+    userId: integer('user_id').references(() => users.id).notNull(),
+    token: text('token').notNull().unique(),
+    expiresAt: timestamp('expires_at').notNull(),
     createdAt: timestamp('created_at').defaultNow(),
 });
 
@@ -33,6 +42,14 @@ export const ordersToProducts = pgTable('orders_to_products', {
 
 export const usersRelations = relations(users, ({ many }) => ({
     orders: many(orders),
+    sessions: many(sessions),
+}));
+
+export const sessionsRelations = relations(sessions, ({ one }) => ({
+    user: one(users, {
+        fields: [sessions.userId],
+        references: [users.id],
+    }),
 }));
 
 export const ordersRelations = relations(orders, ({ one, many }) => ({

@@ -1,4 +1,5 @@
 import productService from '../../application/services/ProductService.js';
+import { checkAuth } from '../hooks/authHook.js';
 
 const productBodySchema = {
     type: 'object',
@@ -36,11 +37,6 @@ const productParamsSchema = {
 
 async function productRoutes(fastify, options) {
 
-    fastify.post('/products', { schema: createProductSchema }, async (request, reply) => {
-        const product = await productService.createProduct(request.body);
-        return reply.code(201).send(product);
-    });
-
     fastify.get('/products', {
         schema: {
             description: 'Get all products',
@@ -64,34 +60,23 @@ async function productRoutes(fastify, options) {
         }
     });
 
-    fastify.put('/products/:id', {
-        schema: {
-            description: 'Update product',
-            tags: ['Products'],
-            params: productParamsSchema,
-            body: { ...productBodySchema, required: [] }
-        }
-    }, async (request, reply) => {
-        try {
-            return await productService.updateProduct(Number(request.params.id), request.body);
-        } catch (error) {
-            return reply.code(404).send({ message: error.message });
-        }
-    });
+    fastify.register(async function (protectedRoutes) {
 
-    fastify.delete('/products/:id', {
-        schema: {
-            description: 'Delete product',
-            tags: ['Products'],
-            params: productParamsSchema
-        }
-    }, async (request, reply) => {
-        try {
-            const result = await productService.deleteProduct(Number(request.params.id));
-            return { message: 'Product deleted', deletedId: result.id };
-        } catch (error) {
-            return reply.code(404).send({ message: error.message });
-        }
+        protectedRoutes.addHook('preHandler', checkAuth);
+
+        protectedRoutes.post('/products', { schema: createProductSchema }, async (req, reply) => {
+            const product = await productService.createProduct(req.body);
+            return reply.code(201).send(product);
+        });
+
+        protectedRoutes.put('/products/:id', async (req, reply) => {
+            return await productService.updateProduct(Number(req.params.id), req.body);
+        });
+
+        protectedRoutes.delete('/products/:id', async (req, reply) => {
+            await productService.deleteProduct(Number(req.params.id));
+            return { message: 'Product deleted' };
+        });
     });
 }
 

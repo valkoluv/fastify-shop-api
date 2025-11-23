@@ -5,15 +5,21 @@ import { users } from '../../domain/schema.js';
 class UserRepository {
     async create(userData) {
         const result = await db.insert(users).values(userData).returning();
-        return result[0]; 
+        return result[0];
     }
 
     async findById(id) {
         return await db.query.users.findFirst({
             where: eq(users.id, id),
             with: {
-                orders: true 
+                orders: true
             }
+        });
+    }
+
+    async findByEmail(email) {
+        return await db.query.users.findFirst({
+            where: eq(users.email, email),
         });
     }
 

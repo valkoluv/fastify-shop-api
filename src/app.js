@@ -1,6 +1,8 @@
 import Fastify from 'fastify';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
+import fastifyCookie from '@fastify/cookie';
+import authRoutes from './presentation/routes/authRoutes.js';
 
 import userRoutes from './presentation/routes/userRoutes.js';
 import orderRoutes from './presentation/routes/orderRoutes.js';
@@ -8,6 +10,10 @@ import productRoutes from './presentation/routes/productRoutes.js';
 
 const fastify = Fastify({
     logger: true
+});
+
+fastify.register(fastifyCookie, {
+    secret: process.env.COOKIE_SECRET, 
 });
 
 await fastify.register(fastifySwagger, {
@@ -35,6 +41,7 @@ await fastify.register(fastifySwaggerUi, {
 fastify.register(userRoutes);
 fastify.register(orderRoutes);
 fastify.register(productRoutes);
+fastify.register(authRoutes, { prefix: '/auth' });
 
 try {
     await fastify.listen({ port: 3000 });
