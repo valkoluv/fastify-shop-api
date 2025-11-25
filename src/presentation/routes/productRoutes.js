@@ -39,11 +39,25 @@ async function productRoutes(fastify, options) {
 
     fastify.get('/products', {
         schema: {
-            description: 'Get all products',
-            tags: ['Products']
+            querystring: {
+                type: 'object',
+                properties: {
+                    page: { type: 'integer', minimum: 1, default: 1 },
+                    limit: { type: 'integer', minimum: 1, default: 10 },
+                    search: { type: 'string' }
+                }
+            }
         }
     }, async (request, reply) => {
-        return await productService.getAllProducts();
+        const { page, limit, search } = request.query;
+
+        const result = await productService.getAllProducts({
+            page: Number(page) || 1,
+            limit: Number(limit) || 10,
+            search
+        });
+
+        return result;
     });
 
     fastify.get('/products/:id', {

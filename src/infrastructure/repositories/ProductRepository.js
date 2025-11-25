@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, ilike, count } from 'drizzle-orm'; 
 import { db } from '../db.js';
 import { products } from '../../domain/schema.js';
 
@@ -8,8 +8,31 @@ class ProductRepository {
         return result[0];
     }
 
-    async findAll() {
-        return await db.query.products.findMany();
+    async findAll({ page = 1, limit = 10, search = '' }) {
+        const offset = (page - 1) * limit;
+
+        const searchFilter = search ? ilike(products.name, `%${search}%`) : undefined;
+
+        const [items, totalResult] = await Promise.all([
+            db.query.products.findMany({
+                where: searchFilter,
+                limit: limit,
+                offset: offset,
+                orderBy: (products, { desc }) => [desc(products.id)],
+            }),
+
+            db.select({ value: count() })
+                .from(products)
+                .where(searchFilter)
+        ]);
+
+        return {
+            items,
+            total: totalResult[0].value,
+            page,
+            limit,
+            totalPages: Math.ceil(totalResult[0].value / limit)
+        };
     }
 
     async findById(id) {
